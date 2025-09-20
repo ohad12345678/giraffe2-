@@ -1,1 +1,8 @@
+# DB מקומי
+*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
 
