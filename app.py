@@ -1,6 +1,6 @@
 # app.py — 🍜 ג'ירף מטבחים · ניהול איכות מזון
+# תכונות: SQLite, RTL, שמירה ל-Google Sheets (אופציונלי), ניתוח GPT (gpt-5)
 # רץ על Streamlit Cloud; משתמש אך ורק ב-st.secrets (אין .env)
-# תכונות: SQLite, RTL, שמירה ל-Google Sheets (אופציונלי), ניתוח GPT (אופציונלי)
 
 from __future__ import annotations
 import sqlite3
@@ -135,7 +135,7 @@ def save_to_google_sheets(branch: str, chef: str, dish: str, score: int, notes: 
         st.warning(f"שגיאת Google Sheets: {e}")
         return False
 
-# ---------- OpenAI GPT (optional) ----------
+# ---------- OpenAI GPT (optional, gpt-5) ----------
 def get_openai_client():
     api_key = st.secrets.get("OPENAI_API_KEY", "")
     if not api_key:
@@ -297,7 +297,7 @@ else:
         st.write("—" if not top_dish else f"**{top_dish}** — {top_dish_count}")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------- GPT ----------
+# ---------- GPT (gpt-5) ----------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader("🤖 ניתוח GPT")
 gpt_client, gpt_err = get_openai_client()
@@ -316,6 +316,20 @@ else:
         with q_col: user_q = st.text_input("שאלה על הנתונים (אופציונלי)")
         with btn_col: ask_btn = st.button("שלח")
         overview_btn = st.button("ניתוח כללי")
+        ping_btn = st.button("🔎 בדיקת חיבור ל-GPT")
+
+        if ping_btn:
+            try:
+                ping = gpt_client.chat.completions.create(
+                    model="gpt-5",
+                    messages=[{"role":"system","content":"You are a ping responder."},
+                              {"role":"user","content":"ping"}],
+                    temperature=0.0,
+                )
+                msg = (ping.choices[0].message.content or "").strip()
+                st.success(f"GPT מחובר. תשובה: {msg[:120]}")
+            except Exception as e:
+                st.error(f"שגיאת GPT: {e}")
 
         if overview_btn or ask_btn:
             csv_text = df_to_csv_for_llm(df)
@@ -326,7 +340,7 @@ else:
             with st.spinner("מנתח..."):
                 try:
                     resp = gpt_client.chat.completions.create(
-                        model="gpt-4o-mini",
+                        model="gpt-5",
                         messages=[
                             {"role":"system","content":"אתה אנליסט דאטה דובר עברית. עמודות: id, branch, chef_name, dish_name, score, notes, created_at."},
                             {"role":"user","content": user_prompt},
@@ -388,7 +402,7 @@ if st.session_state.get("admin_logged_in", False):
         else:
             if st.button("🧪 בדיקת GPT"):
                 try:
-                    gc.chat.completions.create(model="gpt-4o-mini",
+                    gc.chat.completions.create(model="gpt-5",
                                                messages=[{"role":"user","content":"ping"}],
                                                temperature=0.0)
                     st.success("✅ GPT מחובר")
